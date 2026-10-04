@@ -1,29 +1,68 @@
-import Navegacion from "./components/Navegacion";
-import Bienvenida from "./components/Bienvenida";
+import { useEffect, useState } from "react";
 import Cabecera from "./components/Cabecera";
-import TarjetaActividad from "./components/TarjetaActividad";
+import Navegacion from "./components/Navegacion";
+import Cartelera from "./pages/Cartelera";
 import PiePagina from "./components/PiePagina";
+import { actividades } from "./data/actividades";
 
 function App() {
+  const [categoria, setCategoria] = useState("Todas");
+
+  const visibles = categoria === "Todas"
+    ? actividades
+    : actividades.filter((actividad) => actividad.categoria === categoria);
+
+
+
+const [inscripciones, setInscripciones] = useState(() => {
+  const guardadas = localStorage.getItem("inscripciones");
+  return guardadas ? JSON.parse(guardadas) : [];
+});
+
+useEffect(() => {
+  localStorage.setItem(
+    "inscripciones",
+    JSON.stringify(inscripciones)
+  );
+}, [inscripciones]);
+
+function inscribir(actividad) {
+  const yaExiste = inscripciones.some((item) => item.id === actividad.id);
+
+  if (yaExiste) return;
+
+  setInscripciones([...inscripciones, actividad]);
+}
+
+function eliminarInscripcion(id) {
+  setInscripciones(
+    inscripciones.filter((item) => item.id !== id)
+  );
+}
+
+
   return (
     <>
       <Cabecera />
       <Navegacion />
       <main className="container py-4">
-        <Bienvenida />
-        <div className="row g-4">
-          <div className="col-12 col-md-6 col-lg-4">
-            <TarjetaActividad />
-          </div>
-          <div className="col-12 col-md-6 col-lg-4">
-            <TarjetaActividad />
-          </div>
-          <div className="col-12 col-md-6 col-lg-4">
-            <TarjetaActividad />
-          </div>
-        </div>
+        <select
+          className="form-select mb-4"
+          value={categoria}
+          onChange={(evento) => setCategoria(evento.target.value)}
+        >
+          <option>Todas</option>
+          <option>Música</option>
+          <option>Artes visuales</option>
+          <option>Danza</option>
+          <option>Teatro</option>
+        </select>
+        <Cartelera
+          actividades={visibles}
+          onInscribir={inscribir}
+        />
       </main>
-      <PiePagina/>
+      <PiePagina />
     </>
   );
 }
