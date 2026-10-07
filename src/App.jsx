@@ -1,67 +1,88 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import Cabecera from "./components/Cabecera";
 import Navegacion from "./components/Navegacion";
-import Cartelera from "./pages/Cartelera";
 import PiePagina from "./components/PiePagina";
-import { actividades } from "./data/actividades";
+
+import Inicio from "./pages/Inicio";
+import Actividades from "./pages/Actividades";
+import DetalleActividad from "./pages/DetalleActividad";
+import Categorias from "./pages/Categorias";
+import Ofertas from "./pages/Ofertas";
+import InscripcionesPage from "./pages/InscripcionesPage";
+import AdminActividades from "./pages/admin/AdminActividades";
+import NoEncontrada from "./pages/NoEncontrada";
+
+import { actividades as datosIniciales } from "./data/actividades";
 
 function App() {
-  const [categoria, setCategoria] = useState("Todas");
+  const [listaActividades, setListaActividades] = useState(() => {
+    const guardadas = localStorage.getItem("actividades_lista");
+    return guardadas ? JSON.parse(guardadas) : datosIniciales;
+  });
 
-  const visibles = categoria === "Todas"
-    ? actividades
-    : actividades.filter((actividad) => actividad.categoria === categoria);
+  const [inscripciones, setInscripciones] = useState(() => {
+    const guardadas = localStorage.getItem("inscripciones");
+    return guardadas ? JSON.parse(guardadas) : [];
+  });
 
+  useEffect(() => {
+    localStorage.setItem("actividades_lista", JSON.stringify(listaActividades));
+  }, [listaActividades]);
 
+  useEffect(() => {
+    localStorage.setItem("inscripciones", JSON.stringify(inscripciones));
+  }, [inscripciones]);
 
-const [inscripciones, setInscripciones] = useState(() => {
-  const guardadas = localStorage.getItem("inscripciones");
-  return guardadas ? JSON.parse(guardadas) : [];
-});
+  function inscribir(actividad) {
+    const yaExiste = inscripciones.some((item) => item.id === actividad.id);
+    if (yaExiste) return;
+    setInscripciones([...inscripciones, actividad]);
+  }
 
-useEffect(() => {
-  localStorage.setItem(
-    "inscripciones",
-    JSON.stringify(inscripciones)
-  );
-}, [inscripciones]);
+  function eliminarInscripcion(id) {
+    setInscripciones(inscripciones.filter((item) => item.id !== id));
+  }
 
-function inscribir(actividad) {
-  const yaExiste = inscripciones.some((item) => item.id === actividad.id);
+  function agregarActividad(nueva) {
+    setListaActividades([nueva, ...listaActividades]);
+  }
 
-  if (yaExiste) return;
-
-  setInscripciones([...inscripciones, actividad]);
-}
-
-function eliminarInscripcion(id) {
-  setInscripciones(
-    inscripciones.filter((item) => item.id !== id)
-  );
-}
-
+  function eliminarActividad(id) {
+    setListaActividades(listaActividades.filter((item) => item.id !== id));
+  }
 
   return (
     <>
       <Cabecera />
       <Navegacion />
-      <main className="container py-4">
-        <select
-          className="form-select mb-4"
-          value={categoria}
-          onChange={(evento) => setCategoria(evento.target.value)}
-        >
-          <option>Todas</option>
-          <option>Música</option>
-          <option>Artes visuales</option>
-          <option>Danza</option>
-          <option>Teatro</option>
-        </select>
-        <Cartelera
-          actividades={visibles}
-          onInscribir={inscribir}
+      <Routes>
+        <Route path="/" element={<Inicio />} />
+        <Route path="/actividades" element={<Actividades onInscribir={inscribir} />} />
+        <Route path="/actividades/:id" element={<DetalleActividad />} />
+        <Route path="/categorias" element={<Categorias />} />
+        <Route path="/ofertas" element={<Ofertas onInscribir={inscribir} />} />
+        <Route
+          path="/inscripciones"
+          element={
+            <InscripcionesPage
+              inscripciones={inscripciones}
+              onEliminar={eliminarInscripcion}
+            />
+          }
         />
-      </main>
+        <Route
+          path="/admin/actividades"
+          element={
+            <AdminActividades
+              listaActividades={listaActividades}
+              onAgregar={agregarActividad}
+              onEliminar={eliminarActividad}
+            />
+          }
+        />
+        <Route path="*" element={<NoEncontrada />} />
+      </Routes>
       <PiePagina />
     </>
   );
